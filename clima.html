@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WPA – Analisi di Clima Aziendale | Profexa Consulting</title>
+    <meta name="description" content="Questionario anonimo di analisi del clima aziendale Well-Being Performance Analysis – Profexa Consulting">
+    <meta name="robots" content="noindex, nofollow">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; }
+
+        :root {
+            --op1: #3B5BDB;
+            --co2: #0891B2;
+            --cr3: #7C3AED;
+            --sa4: #D97706;
+            --ri5: #DC2626;
+            --wpa-dark: #2A1F5E;
+            --wpa-gold: #B8872A;
+        }
+
+        /* Pulsanti scala */
+        .scale-btn {
+            transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+            cursor: pointer;
+            user-select: none;
+        }
+        .scale-btn:hover:not(.selected) {
+            transform: translateY(-2px);
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        .scale-btn.selected {
+            color: white !important;
+            border-color: transparent !important;
+            transform: translateY(-3px) scale(1.08);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+        }
+
+        .progress-fill { transition: width 0.4s ease; }
+
+        .screen-active { animation: fadeSlideIn 0.35s ease forwards; }
+        @keyframes fadeSlideIn {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        .btn-wpa {
+            background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);
+            transition: all 0.2s ease;
+        }
+        .btn-wpa:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(42,31,94,0.35);
+        }
+        .btn-wpa:disabled {
+            background: #CBD5E1 !important;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .spinner {
+            width: 48px; height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top-color: var(--wpa-dark);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Legenda scala compatta */
+        .scale-legend {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-top: 6px;
+        }
+        .scale-legend span {
+            font-size: 9px;
+            color: #94a3b8;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        /* Separatore sezioni ORA / PASSATO */
+        .section-ora   { border-top: 4px solid var(--dim-color, #3B5BDB); }
+        .section-past  { border-top: 4px solid #94a3b8; }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-100 via-indigo-50 to-slate-100 min-h-screen">
+
+<!-- ======================================================
+     SCREEN: LOADING
+====================================================== -->
+<div id="screen-loading" class="min-h-screen flex flex-col items-center justify-center gap-4">
+    <div class="spinner"></div>
+    <p class="text-slate-500 font-medium text-sm">Caricamento questionario...</p>
+</div>
+
+<!-- ======================================================
+     SCREEN: ERRORE
+====================================================== -->
+<div id="screen-error" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center screen-active">
+        <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+        </div>
+        <h2 class="text-xl font-bold text-slate-800 mb-2">Questionario non disponibile</h2>
+        <p class="text-slate-500 text-sm" id="error-message">
+            Il link utilizzato non è valido o il questionario non è al momento attivo.
+        </p>
+        <p class="text-slate-400 text-xs mt-5">Per informazioni contatta il tuo responsabile.</p>
+        <img src="./profexa-logo.png" alt="Profexa Consulting" class="h-7 object-contain mx-auto mt-6 opacity-50">
+    </div>
+</div>
+
+<!-- ======================================================
+     SCREEN: INTRO
+====================================================== -->
+<div id="screen-intro" class="hidden min-h-screen flex items-center justify-center p-4 py-8">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl screen-active overflow-hidden">
+
+        <!-- Header WPA -->
+        <div class="px-8 py-6 flex items-center justify-between" style="background: var(--wpa-dark);">
+            <img src="./profexa-logo.png" alt="Profexa Consulting" class="h-9 object-contain brightness-0 invert opacity-90">
+            <img src="./wpa-logo.png" alt="WPA Well-Being Performance Analysis" class="h-12 object-contain">
+        </div>
+
+        <div class="p-8 md:p-10">
+            <div class="mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800 leading-tight">
+                    Analisi di Clima Aziendale
+                </h1>
+                <p class="text-base font-semibold mt-1" style="color: var(--wpa-dark);" id="intro-azienda-nome"></p>
+            </div>
+
+            <!-- Istruzioni -->
+            <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-5 mb-6 space-y-3">
+                <p class="text-sm font-semibold text-indigo-800 flex items-center gap-2">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Come funziona
+                </p>
+                <ul class="text-sm text-slate-600 space-y-2">
+                    <li class="flex items-start gap-2">
+                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">①</span>
+                        <span>Il questionario è composto da <strong>55 item</strong>, ciascuno con due formulazioni:
+                        come percepisci la situazione <strong class="text-indigo-700">oggi</strong> e
+                        come la percepivi <strong class="text-slate-600">in passato</strong>.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">②</span>
+                        <span>Per ogni formulazione seleziona un valore su una scala da <strong>1 a 7</strong>:</span>
+                    </li>
+                </ul>
+
+                <!-- Legenda scala completa nella intro -->
+                <div class="rounded-lg bg-white border border-indigo-100 p-4 mt-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">1</span>
+                            <span class="text-slate-600">Per niente</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">2</span>
+                            <span class="text-slate-600">Poco</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">3</span>
+                            <span class="text-slate-600">Appena sufficiente</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">4</span>
+                            <span class="text-slate-600">Sufficiente</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">5</span>
+                            <span class="text-slate-600">Discreto</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm">
+                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">6</span>
+                            <span class="text-slate-600">Buono</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-sm sm:col-span-2">
+                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: #B8872A;">7</span>
+                            <span class="text-slate-700 font-semibold">Eccellente</span>
+                        </div>
+                    </div>
+                </div>
+
+                <ul class="text-sm text-slate-600 space-y-2 pt-1">
+                    <li class="flex items-start gap-2">
+                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">③</span>
+                        <span>Le risposte sono <strong>completamente anonime</strong>: nessun dato personale verrà raccolto.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">④</span>
+                        <span>Tempo stimato: <strong>10-15 minuti</strong>. Puoi navigare avanti e indietro tra le domande.</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Barre dimensioni decorative -->
+            <div class="grid grid-cols-5 gap-1.5 mb-7">
+                <div class="h-1.5 rounded-full" style="background: var(--op1)"></div>
+                <div class="h-1.5 rounded-full" style="background: var(--co2)"></div>
+                <div class="h-1.5 rounded-full" style="background: var(--cr3)"></div>
+                <div class="h-1.5 rounded-full" style="background: var(--sa4)"></div>
+                <div class="h-1.5 rounded-full" style="background: var(--ri5)"></div>
+            </div>
+
+            <button onclick="showScreen('group')"
+                class="btn-wpa text-white font-bold py-3.5 px-10 rounded-xl text-base w-full">
+                Inizia il Questionario &rarr;
+            </button>
+
+            <p class="text-slate-400 text-xs mt-5 text-center">
+                © Profexa Consulting – Well-Being Performance Analysis
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================
+     SCREEN: SELEZIONE GRUPPO
+====================================================== -->
+<div id="screen-group" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10 max-w-md w-full screen-active">
+
+        <img src="./wpa-logo.png" alt="WPA" class="h-10 object-contain mb-6">
+
+        <h2 class="text-xl font-bold text-slate-800 mb-1">Prima di iniziare</h2>
+        <p class="text-slate-500 text-sm mb-6">
+            Seleziona il gruppo/area aziendale di appartenenza.
+            Questa è <strong>l'unica informazione</strong> che ti viene richiesta.
+        </p>
+
+        <label class="block text-sm font-semibold text-slate-700 mb-2">
+            Gruppo di appartenenza <span class="text-red-500">*</span>
+        </label>
+        <select id="gruppo-select"
+            class="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-400
+                   focus:border-indigo-400 text-slate-700 bg-white text-sm mb-6 transition">
+            <option value="">— Seleziona il tuo gruppo —</option>
+        </select>
+
+        <button id="btn-start-quiz" onclick="startQuiz()" disabled
+            class="btn-wpa text-white font-bold py-3 px-8 rounded-xl w-full text-sm">
+            Procedi &rarr;
+        </button>
+
+        <p class="text-slate-400 text-xs mt-5 text-center">
+            Le risposte sono anonime e non riconducibili alla tua persona
+        </p>
+    </div>
+</div>
+
+<!-- ======================================================
+     SCREEN: DOMANDA
+====================================================== -->
+<div id="screen-question" class="hidden min-h-screen p-4 py-6 md:py-8">
+
+    <!-- Barra progresso -->
+    <div class="max-w-2xl mx-auto mb-4">
+        <div class="bg-white rounded-xl shadow-sm px-5 py-3.5 flex items-center gap-4">
+            <span id="step-counter" class="text-sm font-semibold text-slate-600 flex-shrink-0">
+                Domanda 1 di 55
+            </span>
+            <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div id="progress-bar"
+                    class="h-2 rounded-full progress-fill"
+                    style="width:1.8%; background: var(--op1);">
+                </div>
+            </div>
+            <span id="progress-pct" class="text-xs text-slate-400 flex-shrink-0">2%</span>
+        </div>
+    </div>
+
+    <!-- Card domanda — layout SOPRA/SOTTO sempre -->
+    <div class="max-w-2xl mx-auto">
+        <div id="question-card" class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+            <!-- Header numerazione -->
+            <div id="card-header" class="px-6 py-4 flex items-center justify-between"
+                style="background: var(--op1);">
+                <div>
+                    <p class="text-white text-xs opacity-75 font-medium uppercase tracking-wider">Domanda</p>
+                    <p id="q-number" class="text-white text-3xl font-black leading-none">01</p>
+                </div>
+                <img src="./wpa-logo.png" alt="WPA" class="h-8 object-contain opacity-80">
+            </div>
+
+            <!-- SEZIONE: OGGI -->
+            <div class="p-5 md:p-6 section-ora" id="section-ora-wrapper">
+                <div class="flex items-center gap-2 mb-3">
+                    <span id="ora-dot" class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background: var(--op1)"></span>
+                    <span class="text-xs font-bold uppercase tracking-widest text-indigo-700">Oggi</span>
+                </div>
+                <p id="q-text-ora"
+                    class="text-slate-700 font-medium leading-relaxed mb-5 text-sm md:text-base">
+                </p>
+                <!-- Scala ORA -->
+                <div id="scale-ora" class="grid grid-cols-7 gap-1.5"></div>
+                <!-- Legenda scala ORA -->
+                <div class="scale-legend">
+                    <span>Per<br>niente</span>
+                    <span>Poco</span>
+                    <span>App.<br>suff.</span>
+                    <span>Suffi-<br>ciente</span>
+                    <span>Dis-<br>creto</span>
+                    <span>Buono</span>
+                    <span>Eccel-<br>lente</span>
+                </div>
+            </div>
+
+            <!-- Divisore -->
+            <div class="border-t border-slate-100"></div>
+
+            <!-- SEZIONE: IN PASSATO -->
+            <div class="p-5 md:p-6 bg-slate-50 section-past">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400 flex-shrink-0"></span>
+                    <span class="text-xs font-bold uppercase tracking-widest text-slate-500">
+                        In Passato
+                        <span class="normal-case font-normal text-slate-400 ml-1">
+                            (Come condiviso in presentazione attività)
+                        </span>
+                    </span>
+                </div>
+                <p id="q-text-ex"
+                    class="text-slate-600 font-medium leading-relaxed mb-5 text-sm md:text-base">
+                </p>
+                <!-- Scala PASSATO -->
+                <div id="scale-ex" class="grid grid-cols-7 gap-1.5"></div>
+                <!-- Legenda scala PASSATO -->
+                <div class="scale-legend">
+                    <span>Per<br>niente</span>
+                    <span>Poco</span>
+                    <span>App.<br>suff.</span>
+                    <span>Suffi-<br>ciente</span>
+                    <span>Dis-<br>creto</span>
+                    <span>Buono</span>
+                    <span>Eccel-<br>lente</span>
+                </div>
+            </div>
+
+            <!-- Navigazione -->
+            <div class="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-white">
+                <button id="btn-back" onclick="goBack()"
+                    class="flex items-center gap-1.5 text-slate-500 hover:text-slate-700
+                           font-semibold text-sm py-2 px-4 rounded-lg hover:bg-slate-100 transition">
+                    &larr; Indietro
+                </button>
+
+                <span id="hint-both" class="text-xs text-slate-400 text-center hidden">
+                    Rispondi ad entrambe
+                </span>
+
+                <button id="btn-next" onclick="goNext()" disabled
+                    class="btn-wpa text-white font-bold py-2.5 px-7 rounded-xl text-sm">
+                    <span id="btn-next-text">Avanti &rarr;</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================
+     SCREEN: GRAZIE
+====================================================== -->
+<div id="screen-thankyou" class="hidden min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 max-w-lg w-full text-center screen-active">
+
+        <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+            style="background: #ECFDF5;">
+            <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+        </div>
+
+        <img src="./wpa-logo.png" alt="WPA" class="h-12 object-contain mx-auto mb-5">
+
+        <h2 class="text-2xl font-bold text-slate-800 mb-3">Grazie per la tua partecipazione!</h2>
+        <p class="text-slate-500 text-sm mb-7 leading-relaxed">
+            Le tue risposte sono state registrate in modo completamente anonimo.
+            Il tuo contributo è fondamentale per l'analisi del clima aziendale.
+        </p>
+
+        <div class="bg-green-50 rounded-xl p-4 text-left space-y-2 mb-8">
+            <p class="text-sm text-green-700 flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                Risposte salvate con successo
+            </p>
+            <p class="text-sm text-green-600 flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                Anonimato garantito – nessun dato personale raccolto
+            </p>
+            <p class="text-sm text-green-600 flex items-center gap-2">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                I risultati saranno elaborati dal team Profexa Consulting
+            </p>
+        </div>
+
+        <img src="./profexa-logo.png" alt="Profexa Consulting" class="h-8 object-contain mx-auto opacity-60">
+        <p class="text-slate-400 text-xs mt-3">© Profexa Consulting – Well-Being Performance Analysis</p>
+    </div>
+</div>
+
+
+<!-- ======================================================
+     JAVASCRIPT
+====================================================== -->
+<script>
+// =========================================================
+// ▶ CONFIGURAZIONE SUPABASE
+// =========================================================
+const SUPABASE_URL      = 'https://lccemvnwmkbmzdyscjqy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxjY2Vtdm53bWtibXpkeXNjanF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNTY5MTUsImV4cCI6MjA5MzczMjkxNX0.415aOBkflrgd59NmUpld7tXgHARaW0KN0DUlOj-y5eY';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// =========================================================
+// ▶ MAPPA DIMENSIONI (colori interni, non mostrati all'utente)
+// =========================================================
+const DIM_CFG = {
+    OP1: { col: '#3B5BDB', da: 1,  a: 11 },
+    CO2: { col: '#0891B2', da: 12, a: 22 },
+    CR3: { col: '#7C3AED', da: 23, a: 33 },
+    SA4: { col: '#D97706', da: 34, a: 44 },
+    RI5: { col: '#DC2626', da: 45, a: 55 },
+};
+
+function getDim(qId) {
+    for (const [k, v] of Object.entries(DIM_CFG)) {
+        if (qId >= v.da && qId <= v.a) return v.col;
+    }
+    return '#3B5BDB';
+}
+
+// =========================================================
+// ▶ ORDINE SHUFFLE DOMANDE
+//   Interleaving per dimensione: OP1→CO2→CR3→SA4→RI5 × 11 round
+//   Round 1: q1,q12,q23,q34,q45  Round 2: q2,q13,q24,q35,q46 ...
+// =========================================================
+const SHUFFLED_ORDER = [
+     1, 12, 23, 34, 45,
+     2, 13, 24, 35, 46,
+     3, 14, 25, 36, 47,
+     4, 15, 26, 37, 48,
+     5, 16, 27, 38, 49,
+     6, 17, 28, 39, 50,
+     7, 18, 29, 40, 51,
+     8, 19, 30, 41, 52,
+     9, 20, 31, 42, 53,
+    10, 21, 32, 43, 54,
+    11, 22, 33, 44, 55,
+];
+// SHUFFLED_ORDER[i] = id della domanda originale mostrata allo step i+1
+
+// =========================================================
+// ▶ LE 55 DOMANDE (indicizzate per id, non per posizione)
+// =========================================================
+const DOMANDE = {
+    1:  { ora: "Quanto ritiene che le responsabilità e i compiti assegnati siano adeguati alle sue competenze e capacità?",
+          ex:  "Quanto ritiene che le responsabilità e i compiti assegnati fossero adeguati alle sue competenze e capacità?" },
+    2:  { ora: "Quanto ritiene che il suo livello gerarchico sia adeguato alle sue competenze e capacità?",
+          ex:  "Quanto ritiene che il suo livello gerarchico fosse adeguato alle sue competenze e capacità?" },
+    3:  { ora: "Quanto ritiene siano complete le sue conoscenze e capacità rispetto a ciò che le è richiesto in azienda?",
+          ex:  "Quanto ritiene fossero complete le sue conoscenze e capacità rispetto a ciò che le era richiesto in azienda?" },
+    4:  { ora: "Quanto ritiene che la quantità di lavoro assegnatole sia adeguata alla sua possibilità di lavorare con qualità?",
+          ex:  "Quanto ritiene che la quantità di lavoro assegnatole fosse adeguata alla sua possibilità di lavorare con qualità?" },
+    5:  { ora: "Quanto ritiene siano chiare le sue attività e i suoi obiettivi professionali in azienda?",
+          ex:  "Quanto ritiene fossero chiari le sue attività e i suoi obiettivi professionali in azienda?" },
+    6:  { ora: "Quanto ritiene siano chiare le procedure e le relazioni tra le varie aree aziendali?",
+          ex:  "Quanto ritiene fossero chiare le procedure e le relazioni tra le varie aree aziendali?" },
+    7:  { ora: "Quanto ritiene siano efficaci le procedure aziendali rispetto a quanto richiesto dal mercato e dai Clienti?",
+          ex:  "Quanto ritiene fossero efficaci le procedure aziendali rispetto a quanto richiesto dal mercato e dai Clienti?" },
+    8:  { ora: "Quanto ritiene sia snello il processo decisionale in azienda?",
+          ex:  "Quanto ritiene fosse snello il processo decisionale in azienda?" },
+    9:  { ora: "Quanto ritiene si investa sulla crescita delle persone in azienda (es. Sviluppo/Formazione)?",
+          ex:  "Quanto ritiene si investisse sulla crescita delle persone in azienda (es. Sviluppo/Formazione)?" },
+    10: { ora: "Quanto ritiene sia efficace il processo di inserimento di nuove risorse in azienda?",
+          ex:  "Quanto ritiene fosse efficace il processo di inserimento di nuove risorse in azienda?" },
+    11: { ora: "Quanto ritieni ci sia un metodo con cui si investe sulla crescita delle persone in azienda (es. sviluppo/formazione)?",
+          ex:  "Quanto ritieni ci fosse un metodo con cui si investiva sulla crescita delle persone in azienda (es. sviluppo/formazione)?" },
+    12: { ora: "Quanto ritiene ci sia una adeguata comunicazione tra le diverse aree aziendali?",
+          ex:  "Quanto ritiene ci fosse una adeguata comunicazione tra le diverse aree aziendali?" },
+    13: { ora: "Quanto ritiene di essere informato sul lavoro che fanno le persone delle altre aree in azienda?",
+          ex:  "Quanto ritiene che fosse informato sul lavoro che facevano le persone delle altre aree in azienda?" },
+    14: { ora: "Quanto ritiene di conoscere gli obiettivi e la Missione dell'azienda?",
+          ex:  "Quanto ritiene conoscesse gli obiettivi e la Missione dell'azienda?" },
+    15: { ora: "Quanto ritiene di avere un confronto costante sulle attività di lavoro con il suo responsabile?",
+          ex:  "Quanto ritiene di aver avuto un confronto costante sulle attività di lavoro con il suo responsabile?" },
+    16: { ora: "Quanto ritiene venga informato dei risultati generati delle sue attività?",
+          ex:  "Quanto ritiene venisse informato dei risultati generati delle sue attività?" },
+    17: { ora: "Quanto ritiene di conoscere i punti di forza dei prodotti/servizi della sua azienda rispetto alle esigenze dei clienti?",
+          ex:  "Quanto ritiene conoscesse i punti di forza dei prodotti/servizi della sua azienda rispetto alle esigenze dei clienti?" },
+    18: { ora: "Quanto ritiene che si possa accedere facilmente alle informazioni utili per il proprio lavoro?",
+          ex:  "Quanto ritiene che si potesse accedere facilmente alle informazioni utili per il proprio lavoro?" },
+    19: { ora: "Quanto ritiene ci sia una adeguata comunicazione tra i colleghi della propria area aziendale?",
+          ex:  "Quanto ritiene ci fosse una adeguata comunicazione tra i colleghi della propria area aziendale?" },
+    20: { ora: "Quanto ritiene adeguati gli strumenti di comunicazione (email, intranet, chat interne, ecc.) aziendali?",
+          ex:  "Quanto ritiene fossero adeguati gli strumenti di comunicazione (email, intranet, chat interne, ecc.) aziendali?" },
+    21: { ora: "Quanto percepisce coerenza tra ciò che i diversi responsabili diffondono in azienda?",
+          ex:  "Quanto percepisce che ci fosse coerenza tra ciò che i diversi responsabili diffondevano in azienda?" },
+    22: { ora: "Quanto ritiene ci sia una comunicazione preventiva rispetto ai cambiamenti aziendali che vengono implementati?",
+          ex:  "Quanto ritiene che ci fosse una comunicazione preventiva rispetto ai cambiamenti aziendali che venivano implementati?" },
+    23: { ora: "Quanto ritiene di fidarsi dei colleghi della sua area?",
+          ex:  "Quanto ritiene si fidasse dei colleghi della sua area?" },
+    24: { ora: "Quanto ritiene di fidarsi dei colleghi delle varie aree aziendali?",
+          ex:  "Quanto ritiene si fidasse dei colleghi delle varie aree aziendali?" },
+    25: { ora: "Quanto ritiene di fidarsi del Responsabile della sua area?",
+          ex:  "Quanto ritiene si fidasse del Responsabile della sua area?" },
+    26: { ora: "Quanto ritiene di fidarsi del Vertice Aziendale?",
+          ex:  "Quanto ritiene si fidasse del Vertice Aziendale?" },
+    27: { ora: "Quanto ritiene che il Vertice Aziendale applichi nelle proprie azioni ciò che chiede ai propri collaboratori?",
+          ex:  "Quanto ritiene che il Vertice Aziendale applicasse nelle proprie azioni ciò che chiedeva ai propri collaboratori?" },
+    28: { ora: "Quanto ritiene che le decisioni strategiche ispirino fiducia nel futuro dell'organizzazione?",
+          ex:  "Quanto ritiene che le decisioni strategiche ispirassero fiducia nel futuro dell'organizzazione?" },
+    29: { ora: "Quanto ritiene che le comunicazioni ufficiali dell'azienda siano credibili e coerenti con i fatti?",
+          ex:  "Quanto ritiene che le comunicazioni ufficiali dell'azienda fossero credibili e coerenti con i fatti?" },
+    30: { ora: "Quanto ritiene che le regole siano applicate in modo coerente e uguale per tutti?",
+          ex:  "Quanto ritiene che le regole fossero applicate in modo coerente e uguale per tutti?" },
+    31: { ora: "Quanto ritiene che l'azienda mantenga gli impegni presi con i dipendenti?",
+          ex:  "Quanto ritiene che l'azienda mantenesse gli impegni presi con i dipendenti?" },
+    32: { ora: "Quanto ritiene di essere libero di condividere idee senza timore di essere giudicato?",
+          ex:  "Quanto ritiene che fosse libero di condividere idee senza timore di essere giudicato?" },
+    33: { ora: "Quanto crede nella sua Azienda?",
+          ex:  "Quanto credeva nella sua Azienda?" },
+    34: { ora: "Quanto sente di poter proporre idee o soluzioni utili per migliorare il proprio lavoro?",
+          ex:  "Quanto sente potesse proporre idee o soluzioni utili per migliorare il proprio lavoro?" },
+    35: { ora: "Quanto sente di poter proporre idee o soluzioni utili per migliorare il lavoro dei propri colleghi in azienda?",
+          ex:  "Quanto sente potesse proporre idee o soluzioni utili per migliorare il lavoro dei propri colleghi in azienda?" },
+    36: { ora: "Quanto sente di poter proporre idee o soluzioni utili per migliorare il lavoro del proprio responsabile in azienda?",
+          ex:  "Quanto sente potesse proporre idee o soluzioni utili per migliorare il lavoro del proprio responsabile in azienda?" },
+    37: { ora: "Quanto ritiene di poter contribuire al raggiungimento degli obiettivi aziendali?",
+          ex:  "Quanto ritiene potesse contribuire al raggiungimento degli obiettivi aziendali?" },
+    38: { ora: "Quanto ritiene di sentirsi parte dell'organizzazione?",
+          ex:  "Quanto ritiene che si sentisse parte dell'organizzazione?" },
+    39: { ora: "Quanto ritiene di condividere i Valori e la Missione dell'azienda?",
+          ex:  "Quanto ritiene che condividesse i Valori e la Missione dell'azienda?" },
+    40: { ora: "Quanto ritiene che il suo lavoro contribuisca anche alla sua crescita personale?",
+          ex:  "Quanto ritiene che il suo lavoro contribuisse anche alla sua crescita personale?" },
+    41: { ora: "Quanto ritiene di conoscere il modo in cui il suo lavoro contribuisce agli obiettivi aziendali?",
+          ex:  "Quanto ritiene di conoscere il modo in cui il suo lavoro contribuisse agli obiettivi aziendali?" },
+    42: { ora: "Quanto ritiene di vedere un futuro professionale in questa organizzazione?",
+          ex:  "Quanto ritiene vedesse un futuro professionale in questa organizzazione?" },
+    43: { ora: "Quanto ritiene che il suo lavoro abbia un significato che vada oltre la sola retribuzione?",
+          ex:  "Quanto ritiene che il suo lavoro avesse un significato che andasse oltre la sola retribuzione?" },
+    44: { ora: "Quanto sente l'orgoglio di appartenere alla sua azienda?",
+          ex:  "Quanto sentiva l'orgoglio di appartenere alla sua azienda?" },
+    45: { ora: "Quanto ritiene siano utilizzate le sue conoscenze e le capacità in azienda?",
+          ex:  "Quanto ritiene fossero utilizzate le sue conoscenze e le capacità in azienda?" },
+    46: { ora: "Quanto si ritiene soddisfatto della sua retribuzione rapportata alle responsabilità assegnate?",
+          ex:  "Quanto si riteneva soddisfatto della sua retribuzione rapportata alle responsabilità assegnate?" },
+    47: { ora: "Quanta ritiene ci sia una cultura meritocratica in azienda?",
+          ex:  "Quanta ritiene ci fosse una cultura meritocratica in azienda?" },
+    48: { ora: "Quanto ritiene sia funzionale alla produttività l'ambiente di lavoro?",
+          ex:  "Quanto ritiene fosse funzionale alla produttività l'ambiente di lavoro?" },
+    49: { ora: "Quanto ritiene sia piacevole l'ambiente fisico di lavoro?",
+          ex:  "Quanto ritiene fosse piacevole l'ambiente fisico di lavoro?" },
+    50: { ora: "Quanto ritiene sia equa la valutazione sulle capacità delle persone in azienda?",
+          ex:  "Quanto ritiene fosse equa la valutazione sulle capacità delle persone in azienda?" },
+    51: { ora: "Quanto ritiene sia equa la valutazione sui risultati generati dalle persone in azienda?",
+          ex:  "Quanto ritiene fosse equa la valutazione sui risultati generati dalle persone in azienda?" },
+    52: { ora: "Quanta collaborazione ritiene ci sia tra le persone della sua area?",
+          ex:  "Quanta collaborazione ritiene ci fosse tra le persone della sua area?" },
+    53: { ora: "Quanta collaborazione ritiene ci sia tra le varie aree aziendali?",
+          ex:  "Quanta collaborazione ritiene ci fosse tra le varie aree aziendali?" },
+    54: { ora: "Quanta cura e attenzione alle persone gestite ritiene ci sia da parte del suo responsabile diretto?",
+          ex:  "Quanta cura e attenzione alle persone gestite ritiene ci fosse da parte del suo responsabile diretto?" },
+    55: { ora: "Quanto ritiene che l'organizzazione promuova un ambiente inclusivo e attento alle persone?",
+          ex:  "Quanto ritiene che l'organizzazione promuovesse un ambiente inclusivo e attento alle persone?" },
+};
+
+// =========================================================
+// ▶ STATO APPLICAZIONE
+// =========================================================
+let appState = {
+    aziendaId:         null,
+    aziendaNome:       '',
+    gruppiList:        [],
+    gruppoSelezionato: '',
+    stepCorrente:      1,    // 1-55 (posizione display, non id domanda)
+    risposte:          {},   // { q01_ora: 5, q01_ex: 3, ... } — chiavi = id originale
+};
+
+// =========================================================
+// ▶ INIZIALIZZAZIONE
+// =========================================================
+window.addEventListener('DOMContentLoaded', async () => {
+    const params   = new URLSearchParams(window.location.search);
+    const refToken = params.get('ref');
+
+    if (!refToken) {
+        showError('Link non valido: manca il codice questionario. Contatta il tuo responsabile.');
+        return;
+    }
+
+    try {
+        const { data, error } = await db
+            .from('wpa_aziende')
+            .select('id, nome, gruppi, attivo')
+            .eq('ref_token', refToken)
+            .single();
+
+        if (error || !data) {
+            showError('Il codice questionario non è stato trovato nel sistema.');
+            return;
+        }
+        if (!data.attivo) {
+            showError('Questo questionario non è al momento attivo. Contatta il tuo responsabile.');
+            return;
+        }
+
+        appState.aziendaId   = data.id;
+        appState.aziendaNome = data.nome;
+        appState.gruppiList  = data.gruppi || [];
+
+        // Popola dropdown gruppi
+        const sel = document.getElementById('gruppo-select');
+        appState.gruppiList.forEach(g => {
+            const opt      = document.createElement('option');
+            const nomeGruppo = typeof g === 'object' ? g.nome : g;
+            opt.value      = nomeGruppo;
+            opt.textContent = nomeGruppo;
+            sel.appendChild(opt);
+        });
+
+        document.getElementById('intro-azienda-nome').textContent = data.nome;
+        showScreen('intro');
+
+    } catch (err) {
+        console.error('Errore caricamento:', err);
+        showError('Errore di connessione al server. Riprova più tardi.');
+    }
+});
+
+// =========================================================
+// ▶ GESTIONE SCHERMATE
+// =========================================================
+function showScreen(name) {
+    ['loading','error','intro','group','question','thankyou'].forEach(s => {
+        const el = document.getElementById(`screen-${s}`);
+        if (!el) return;
+        el.classList.toggle('hidden', s !== name);
+    });
+}
+function showError(msg) {
+    document.getElementById('error-message').textContent = msg;
+    showScreen('error');
+}
+
+// =========================================================
+// ▶ SELEZIONE GRUPPO
+// =========================================================
+document.getElementById('gruppo-select').addEventListener('change', function () {
+    document.getElementById('btn-start-quiz').disabled = !this.value;
+});
+
+function startQuiz() {
+    const sel = document.getElementById('gruppo-select');
+    if (!sel.value) return;
+    appState.gruppoSelezionato = sel.value;
+    appState.stepCorrente      = 1;
+    appState.risposte          = {};
+    renderStep(1);
+    showScreen('question');
+}
+
+// =========================================================
+// ▶ RENDERING STEP
+// =========================================================
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function renderStep(stepNum) {
+    // Recupera la domanda originale in base all'ordine shuffle
+    const qId  = SHUFFLED_ORDER[stepNum - 1];
+    const q    = DOMANDE[qId];
+    const col  = getDim(qId);
+
+    // Aggiorna UI
+    document.getElementById('step-counter').textContent = `Domanda ${stepNum} di 55`;
+    document.getElementById('progress-pct').textContent = Math.round(stepNum / 55 * 100) + '%';
+    document.getElementById('progress-bar').style.width      = (stepNum / 55 * 100).toFixed(1) + '%';
+    document.getElementById('progress-bar').style.background = col;
+
+    document.getElementById('card-header').style.background = col;
+    document.getElementById('q-number').textContent         = pad(stepNum);
+    document.getElementById('q-text-ora').textContent       = q.ora;
+    document.getElementById('q-text-ex').textContent        = q.ex;
+    document.getElementById('ora-dot').style.background     = col;
+    document.getElementById('section-ora-wrapper').style.borderTopColor = col;
+
+    // Nascondi tasto Indietro al primo step
+    document.getElementById('btn-back').classList.toggle('invisible', stepNum === 1);
+
+    // Render scale usando l'id originale come chiave
+    renderScale('scale-ora', 'ora', qId, col);
+    renderScale('scale-ex',  'ex',  qId, '#64748b');
+
+    updateNextBtn(stepNum, qId);
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function renderScale(containerId, tipo, qId, colore) {
+    const container  = document.getElementById(containerId);
+    const key        = `q${pad(qId)}_${tipo}`;
+    const currentVal = appState.risposte[key] ?? null;
+
+    container.innerHTML = '';
+
+    for (let v = 1; v <= 7; v++) {
+        const btn        = document.createElement('button');
+        btn.textContent  = v;
+        const isSelected = currentVal === v;
+
+        btn.className = `scale-btn w-full aspect-square rounded-lg text-sm font-bold border-2
+            ${isSelected
+                ? 'selected text-white border-transparent'
+                : 'bg-white border-slate-200 text-slate-600'}`;
+
+        if (isSelected) btn.style.background = colore;
+
+        btn.addEventListener('click', () => selectAnswer(tipo, qId, v, colore));
+        container.appendChild(btn);
+    }
+}
+
+function selectAnswer(tipo, qId, valore, colore) {
+    appState.risposte[`q${pad(qId)}_${tipo}`] = valore;
+    renderScale(`scale-${tipo}`, tipo, qId, colore);
+    updateNextBtn(appState.stepCorrente, qId);
+}
+
+function updateNextBtn(stepNum, qId) {
+    const hasOra  = appState.risposte[`q${pad(qId)}_ora`] !== undefined;
+    const hasEx   = appState.risposte[`q${pad(qId)}_ex`]  !== undefined;
+    const ok      = hasOra && hasEx;
+    const isLast  = stepNum === 55;
+
+    document.getElementById('btn-next').disabled = !ok;
+    document.getElementById('hint-both').classList.toggle('hidden', ok);
+    document.getElementById('btn-next-text').innerHTML =
+        isLast ? 'Invia Risposte &#10003;' : 'Avanti &rarr;';
+}
+
+// =========================================================
+// ▶ NAVIGAZIONE
+// =========================================================
+function goBack() {
+    if (appState.stepCorrente > 1) {
+        appState.stepCorrente--;
+        renderStep(appState.stepCorrente);
+    }
+}
+
+async function goNext() {
+    const stepNum = appState.stepCorrente;
+    const qId     = SHUFFLED_ORDER[stepNum - 1];
+    const hasOra  = appState.risposte[`q${pad(qId)}_ora`] !== undefined;
+    const hasEx   = appState.risposte[`q${pad(qId)}_ex`]  !== undefined;
+    if (!hasOra || !hasEx) return;
+
+    if (stepNum < 55) {
+        appState.stepCorrente++;
+        renderStep(appState.stepCorrente);
+    } else {
+        await submitRisposte();
+    }
+}
+
+// =========================================================
+// ▶ INVIO DATI A SUPABASE
+// =========================================================
+async function submitRisposte() {
+    const btn = document.getElementById('btn-next');
+    btn.disabled = true;
+    document.getElementById('btn-next-text').textContent = 'Invio in corso...';
+
+    try {
+        // Costruisci payload con le chiavi originali (q01_ora...q55_ex)
+        const payload = {
+            azienda_id: appState.aziendaId,
+            gruppo:     appState.gruppoSelezionato,
+        };
+
+        for (let i = 1; i <= 55; i++) {
+            const p = pad(i);
+            payload[`q${p}_ora`] = appState.risposte[`q${p}_ora`] ?? null;
+            payload[`q${p}_ex`]  = appState.risposte[`q${p}_ex`]  ?? null;
+        }
+
+        const { error } = await db.from('clima_risposte').insert([payload]);
+        if (error) throw error;
+
+        showScreen('thankyou');
+
+    } catch (err) {
+        console.error('Errore invio:', err);
+        alert("Errore durante l'invio. Controlla la connessione e riprova.");
+        btn.disabled = false;
+        document.getElementById('btn-next-text').innerHTML = 'Invia Risposte &#10003;';
+    }
+}
+</script>
+
+</body>
+</html>
