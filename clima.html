@@ -7,8 +7,11 @@
     <meta name="description" content="Questionario anonimo di analisi del clima aziendale Well-Being Performance Analysis – Profexa Consulting">
     <meta name="robots" content="noindex, nofollow">
 
+    <!-- TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -26,30 +29,49 @@
             --wpa-gold: #B8872A;
         }
 
-        /* Pulsanti scala */
-        .scale-btn {
-            transition: all 0.15s cubic-bezier(0.4,0,0.2,1);
+        /* Bottone scala circolare */
+        .scale-circle-btn {
+            width: 3.25rem;
+            height: 3.25rem;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 900;
+            border: 2px solid #cbd5e1;
+            background-color: #ffffff;
+            color: #334155;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             user-select: none;
         }
-        .scale-btn:hover:not(.selected) {
-            transform: translateY(-2px);
-            border-color: #94a3b8;
-            background: #f8fafc;
+        @media (max-width: 640px) {
+            .scale-circle-btn {
+                width: 2.6rem;
+                height: 2.6rem;
+                font-size: 1.1rem;
+                border-width: 1px;
+            }
         }
-        .scale-btn.selected {
-            color: white !important;
+        .scale-circle-btn:hover:not(.selected) {
+            border-color: #94a3b8;
+            background-color: #f8fafc;
+            transform: translateY(-1px);
+        }
+        .scale-circle-btn.selected {
+            color: #ffffff !important;
             border-color: transparent !important;
-            transform: translateY(-3px) scale(1.08);
-            box-shadow: 0 4px 14px rgba(0,0,0,0.22);
+            transform: scale(1.08);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
 
         .progress-fill { transition: width 0.4s ease; }
 
-        .screen-active { animation: fadeSlideIn 0.35s ease forwards; }
+        .screen-active { animation: fadeSlideIn 0.3s ease forwards; }
         @keyframes fadeSlideIn {
-            from { opacity:0; transform:translateY(10px); }
-            to   { opacity:1; transform:translateY(0); }
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         .btn-wpa {
@@ -57,8 +79,8 @@
             transition: all 0.2s ease;
         }
         .btn-wpa:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(42,31,94,0.35);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(42,31,94,0.3);
         }
         .btn-wpa:disabled {
             background: #CBD5E1 !important;
@@ -68,35 +90,26 @@
         }
 
         .spinner {
-            width: 48px; height: 48px;
-            border: 4px solid #e2e8f0;
+            width: 40px; height: 40px;
+            border: 3px solid #e2e8f0;
             border-top-color: var(--wpa-dark);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Legenda scala compatta */
-        .scale-legend {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 2px;
-            margin-top: 6px;
+        /* Ombreggiatura morbida e bordi arrotondati premium */
+        .card-premium {
+            border: 1px solid #e2e8f0;
+            border-radius: 1.5rem; /* rounded-3xl */
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+            background-color: #ffffff;
+            transition: border-color 0.3s ease;
         }
-        .scale-legend span {
-            font-size: 9px;
-            color: #94a3b8;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        /* Separatore sezioni ORA / PASSATO */
-        .section-ora   { border-top: 4px solid var(--dim-color, #3B5BDB); }
-        .section-past  { border-top: 4px solid #94a3b8; }
     </style>
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 via-indigo-50 to-slate-100 min-h-screen">
+<body class="bg-gradient-to-br from-slate-100 via-indigo-50 to-slate-100 min-h-screen text-slate-800">
 
 <!-- ======================================================
      SCREEN: LOADING
@@ -129,93 +142,95 @@
 <!-- ======================================================
      SCREEN: INTRO
 ====================================================== -->
-<div id="screen-intro" class="hidden min-h-screen flex items-center justify-center p-4 py-8">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl screen-active overflow-hidden">
+<div id="screen-intro" class="hidden min-h-screen flex items-center justify-center p-2 sm:p-4 py-8">
+    <div class="bg-white rounded-3xl shadow-xl w-full max-w-2xl screen-active overflow-hidden border border-slate-100">
 
-        <!-- Header WPA -->
-        <div class="px-8 py-6 flex items-center justify-between" style="background: var(--wpa-dark);">
-            <img src="./profexa-logo.png" alt="Profexa Consulting" class="h-9 object-contain brightness-0 invert opacity-90">
-            <img src="./wpa-logo.png" alt="WPA Well-Being Performance Analysis" class="h-12 object-contain">
+        <!-- Header: Clean White Background with Centered Logos (Compact Padding) -->
+        <div class="px-8 pt-5 pb-2 flex flex-col items-center justify-center gap-3">
+            <img src="./profexa-logo.png" alt="Profexa Consulting" class="h-7 object-contain opacity-95">
+            <img src="./wpa-logo.png" alt="WPA Well-Being Performance Analysis" class="h-16 sm:h-20 object-contain mt-1">
         </div>
 
-        <div class="p-8 md:p-10">
-            <div class="mb-6">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800 leading-tight">
-                    Analisi di Clima Aziendale
+        <div class="p-4 sm:p-8 pt-1">
+            <div class="mb-4 text-center">
+                <h1 class="text-2xl md:text-3xl font-extrabold text-slate-800 leading-tight uppercase tracking-wider">
+                    ANALISI DI CLIMA AZIENDALE
                 </h1>
-                <p class="text-base font-semibold mt-1" style="color: var(--wpa-dark);" id="intro-azienda-nome"></p>
+                <p class="text-lg font-black mt-2" style="color: var(--wpa-dark);"
+                    id="intro-azienda-nome">Azienda Test</p>
             </div>
 
-            <!-- Istruzioni -->
-            <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-5 mb-6 space-y-3">
-                <p class="text-sm font-semibold text-indigo-800 flex items-center gap-2">
-                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    Come funziona
-                </p>
-                <ul class="text-sm text-slate-600 space-y-2">
-                    <li class="flex items-start gap-2">
-                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">①</span>
-                        <span>Il questionario è composto da <strong>55 item</strong>, ciascuno con due formulazioni:
-                        come percepisci la situazione <strong class="text-indigo-700">oggi</strong> e
-                        come la percepivi <strong class="text-slate-600">in passato</strong>.</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">②</span>
-                        <span>Per ogni formulazione seleziona un valore su una scala da <strong>1 a 7</strong>:</span>
-                    </li>
-                </ul>
+            <!-- Istruzioni - Ultra Compatte Senza Intestazione e Senza Pallini -->
+            <div class="rounded-2xl border border-indigo-100 bg-indigo-50 p-3 sm:p-5 mb-4 space-y-3.5 text-center">
+                <div class="text-sm text-slate-600 space-y-2.5 px-1 sm:px-4">
+                    <p class="leading-relaxed">
+                        Il questionario è composto da <strong>55 item</strong>, ciascuno con due formulazioni: come percepisci la situazione <strong class="text-indigo-700">oggi</strong> e come la percepivi <strong class="text-slate-700">in passato</strong>.
+                    </p>
+                    <p class="leading-relaxed">
+                        Per ogni formulazione seleziona un valore su una scala da <strong>1 a 7</strong>
+                    </p>
+                </div>
 
-                <!-- Legenda scala completa nella intro -->
-                <div class="rounded-lg bg-white border border-indigo-100 p-4 mt-1">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">1</span>
-                            <span class="text-slate-600">Per niente</span>
+                <!-- Scala Orizzontale nella Intro - Ottimizzata per Spazio e Tattilità -->
+                <div class="rounded-2xl bg-white border border-indigo-100 p-2 sm:p-3 mt-2 shadow-inner">
+                    <div class="grid grid-cols-7 gap-[1px] sm:gap-1.5">
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-full text-white text-sm sm:text-xl font-black
+                                flex items-center justify-center flex-shrink-0 shadow-md transform hover:scale-105 transition-all duration-200"
+                                style="background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);">1</span>
+                            <span class="text-[8px] sm:text-xs text-slate-500 font-bold text-center leading-tight whitespace-normal tracking-tight">Per niente</span>
                         </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">2</span>
-                            <span class="text-slate-600">Poco</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-full text-white text-sm sm:text-xl font-black
+                                flex items-center justify-center flex-shrink-0 shadow-md transform hover:scale-105 transition-all duration-200"
+                                style="background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);">2</span>
+                            <span class="text-[8px] sm:text-xs text-slate-500 font-bold text-center leading-tight tracking-tight">Poco</span>
                         </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">3</span>
-                            <span class="text-slate-600">Appena sufficiente</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-full text-white text-sm sm:text-xl font-black
+                                flex items-center justify-center flex-shrink-0 shadow-md transform hover:scale-105 transition-all duration-200"
+                                style="background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);">3</span>
+                            <span class="text-[8px] sm:text-xs text-slate-500 font-bold text-center leading-tight whitespace-normal tracking-tight">Appena<br>sufficiente</span>
                         </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">4</span>
-                            <span class="text-slate-600">Sufficiente</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-full text-white text-sm sm:text-xl font-black
+                                flex items-center justify-center flex-shrink-0 shadow-md transform hover:scale-105 transition-all duration-200"
+                                style="background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);">4</span>
+                            <span class="text-[8px] sm:text-xs text-slate-500 font-bold text-center leading-tight tracking-tight">Sufficiente</span>
                         </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">5</span>
-                            <span class="text-slate-600">Discreto</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-full text-white text-sm sm:text-xl font-black
+                                flex items-center justify-center flex-shrink-0 shadow-md transform hover:scale-105 transition-all duration-200"
+                                style="background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);">5</span>
+                            <span class="text-[8px] sm:text-xs text-slate-500 font-bold text-center leading-tight tracking-tight">Discreto</span>
                         </div>
-                        <div class="flex items-center gap-2 text-sm">
-                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: var(--wpa-dark);">6</span>
-                            <span class="text-slate-600">Buono</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-full text-white text-sm sm:text-xl font-black
+                                flex items-center justify-center flex-shrink-0 shadow-md transform hover:scale-105 transition-all duration-200"
+                                style="background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);">6</span>
+                            <span class="text-[8px] sm:text-xs text-slate-500 font-bold text-center leading-tight tracking-tight">Buono</span>
                         </div>
-                        <div class="flex items-center gap-2 text-sm sm:col-span-2">
-                            <span class="w-7 h-7 rounded-lg text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style="background: #B8872A;">7</span>
-                            <span class="text-slate-700 font-semibold">Eccellente</span>
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="w-10 h-10 sm:w-14 sm:h-14 rounded-full text-white text-sm sm:text-xl font-black
+                                flex items-center justify-center flex-shrink-0 shadow-md transform hover:scale-105 transition-all duration-200"
+                                style="background: linear-gradient(135deg, var(--wpa-dark) 0%, #3D2E8C 100%);">7</span>
+                            <span class="text-[8px] sm:text-xs text-slate-500 font-bold text-center leading-tight tracking-tight">Eccellente</span>
                         </div>
                     </div>
                 </div>
 
-                <ul class="text-sm text-slate-600 space-y-2 pt-1">
-                    <li class="flex items-start gap-2">
-                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">③</span>
-                        <span>Le risposte sono <strong>completamente anonime</strong>: nessun dato personale verrà raccolto.</span>
-                    </li>
-                    <li class="flex items-start gap-2">
-                        <span class="text-indigo-500 font-bold mt-0.5 flex-shrink-0">④</span>
-                        <span>Tempo stimato: <strong>10-15 minuti</strong>. Puoi navigare avanti e indietro tra le domande.</span>
-                    </li>
-                </ul>
+                <div class="text-sm text-slate-600 space-y-2.5 px-1 sm:px-4 pt-2 border-t border-indigo-100/50 mt-3.5">
+                    <p class="leading-relaxed mt-1">
+                        Le risposte sono <strong>completamente anonime</strong>: nessun dato personale verrà raccolto.
+                    </p>
+                    <p class="leading-relaxed">
+                        Tempo stimato: <strong>circa 30 minuti</strong>. Puoi navigare avanti e indietro.
+                    </p>
+                </div>
             </div>
 
-            <!-- Barre dimensioni decorative -->
-            <div class="grid grid-cols-5 gap-1.5 mb-7">
+            <!-- Barre decorative dimensioni (Compatte) -->
+            <div class="grid grid-cols-5 gap-1.5 mb-4">
                 <div class="h-1.5 rounded-full" style="background: var(--op1)"></div>
                 <div class="h-1.5 rounded-full" style="background: var(--co2)"></div>
                 <div class="h-1.5 rounded-full" style="background: var(--cr3)"></div>
@@ -224,11 +239,11 @@
             </div>
 
             <button onclick="showScreen('group')"
-                class="btn-wpa text-white font-bold py-3.5 px-10 rounded-xl text-base w-full">
+                class="btn-wpa text-white font-bold py-3 px-10 rounded-xl text-sm sm:text-base w-full">
                 Inizia il Questionario &rarr;
             </button>
 
-            <p class="text-slate-400 text-xs mt-5 text-center">
+            <p class="text-slate-400 text-[10px] sm:text-xs mt-3 text-center">
                 © Profexa Consulting – Well-Being Performance Analysis
             </p>
         </div>
@@ -239,14 +254,18 @@
      SCREEN: SELEZIONE GRUPPO
 ====================================================== -->
 <div id="screen-group" class="hidden min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-10 max-w-md w-full screen-active">
+    <div class="bg-white rounded-3xl shadow-xl p-8 md:p-10 max-w-md w-full screen-active border border-slate-100">
 
-        <img src="./wpa-logo.png" alt="WPA" class="h-10 object-contain mb-6">
+        <!-- Header Logos Stacked Centered -->
+        <div class="flex flex-col items-center justify-center gap-3 mb-6">
+            <img src="./profexa-logo.png" alt="Profexa Consulting" class="h-7 object-contain opacity-95">
+            <img src="./wpa-logo.png" alt="WPA" class="h-10 object-contain">
+        </div>
 
-        <h2 class="text-xl font-bold text-slate-800 mb-1">Prima di iniziare</h2>
-        <p class="text-slate-500 text-sm mb-6">
+        <h2 class="text-xl font-bold text-slate-800 mb-1 text-center">Prima di iniziare</h2>
+        <p class="text-slate-500 text-sm mb-6 text-center">
             Seleziona il gruppo/area aziendale di appartenenza.
-            Questa è <strong>l'unica informazione</strong> che ti viene richiesta.
+            Questa è <strong>l'unica informazione</strong> richiesta.
         </p>
 
         <label class="block text-sm font-semibold text-slate-700 mb-2">
@@ -258,124 +277,125 @@
             <option value="">— Seleziona il tuo gruppo —</option>
         </select>
 
-        <button id="btn-start-quiz" onclick="startQuiz()" disabled
-            class="btn-wpa text-white font-bold py-3 px-8 rounded-xl w-full text-sm">
-            Procedi &rarr;
-        </button>
+        <div class="flex flex-col gap-3">
+            <button id="btn-start-quiz" onclick="startQuiz()" disabled
+                class="btn-wpa text-white font-bold py-3 px-8 rounded-xl w-full text-sm">
+                Procedi &rarr;
+            </button>
+            <button onclick="showScreen('intro')"
+                class="text-slate-500 hover:text-slate-700 text-xs font-semibold py-2 text-center transition">
+                &larr; Torna alla presentazione
+            </button>
+        </div>
 
-        <p class="text-slate-400 text-xs mt-5 text-center">
+        <p class="text-slate-400 text-xs mt-4 text-center">
             Le risposte sono anonime e non riconducibili alla tua persona
         </p>
     </div>
 </div>
 
 <!-- ======================================================
-     SCREEN: DOMANDA
+     SCREEN: DOMANDA — Stile Minimalista Premium
 ====================================================== -->
-<div id="screen-question" class="hidden min-h-screen p-4 py-6 md:py-8">
+<div id="screen-question" class="hidden min-h-screen p-3 pt-4 pb-3 space-y-5 max-w-2xl mx-auto flex flex-col justify-start">
 
-    <!-- Barra progresso -->
-    <div class="max-w-2xl mx-auto mb-4">
-        <div class="bg-white rounded-xl shadow-sm px-5 py-3.5 flex items-center gap-4">
-            <span id="step-counter" class="text-sm font-semibold text-slate-600 flex-shrink-0">
-                Domanda 1 di 55
-            </span>
-            <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div id="progress-bar"
-                    class="h-2 rounded-full progress-fill"
-                    style="width:1.8%; background: var(--op1);">
-                </div>
+    <!-- Header superiore con logo e progresso minimal -->
+    <div class="space-y-3">
+        <!-- Logo Profexa piccolo e centrato -->
+        <div class="flex justify-center">
+            <img src="./profexa-logo.png" alt="Profexa Consulting" class="h-7 object-contain opacity-90">
+        </div>
+
+        <!-- Indicatore progresso e step -->
+        <div class="px-2">
+            <div class="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                <span id="step-counter">Domanda 1 di 55</span>
+                <span id="progress-pct">2%</span>
             </div>
-            <span id="progress-pct" class="text-xs text-slate-400 flex-shrink-0">2%</span>
+            <div class="h-1 bg-slate-200 rounded-full overflow-hidden w-full shadow-inner">
+                <div id="progress-bar" class="h-full rounded-full progress-fill" style="width:1.8%; background: var(--op1);"></div>
+            </div>
         </div>
     </div>
 
-    <!-- Card domanda — layout SOPRA/SOTTO sempre -->
-    <div class="max-w-2xl mx-auto">
-        <div id="question-card" class="bg-white rounded-2xl shadow-lg overflow-hidden">
-
-            <!-- Header numerazione -->
-            <div id="card-header" class="px-6 py-4 flex items-center justify-between"
-                style="background: var(--op1);">
-                <div>
-                    <p class="text-white text-xs opacity-75 font-medium uppercase tracking-wider">Domanda</p>
-                    <p id="q-number" class="text-white text-3xl font-black leading-none">01</p>
-                </div>
-                <img src="./wpa-logo.png" alt="WPA" class="h-8 object-contain opacity-80">
+    <!-- AREA CARD DOMANDE -->
+    <div class="space-y-6">
+        
+        <!-- CARD PRESENTE (Colorata dinamicamente in base alla dimensione) -->
+        <div id="card-ora" class="relative card-premium p-6 pt-7">
+            <!-- Badge superiore centrato a cavallo -->
+            <div id="badge-ora" class="absolute -top-3.5 left-1/2 transform -translate-x-1/2 px-4 py-0.5 rounded-full text-xs font-bold border transition-colors duration-300">
+                Presente
             </div>
+            
+            <!-- Domanda Centrata e Colorata -->
+            <p id="q-text-ora" class="q-text text-center font-bold text-base md:text-lg leading-relaxed px-2 transition-colors duration-300">
+                Quanto ritiene che le responsabilità e i compiti assegnati siano adeguati...
+            </p>
 
-            <!-- SEZIONE: OGGI -->
-            <div class="p-5 md:p-6 section-ora" id="section-ora-wrapper">
-                <div class="flex items-center gap-2 mb-3">
-                    <span id="ora-dot" class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background: var(--op1)"></span>
-                    <span class="text-xs font-bold uppercase tracking-widest text-indigo-700">Oggi</span>
+            <!-- Scala Cerchi Presente -->
+            <div class="mt-5">
+                <div id="scale-ora" class="flex justify-between items-center gap-1 max-w-md mx-auto"></div>
+                
+                <!-- Legenda orizzontale minimal 1-4-7 -->
+                <div class="grid grid-cols-7 gap-1 mt-2 text-center text-[10px] md:text-[11px] text-slate-500 font-semibold max-w-md mx-auto">
+                    <div>Per niente</div>
+                    <div></div>
+                    <div></div>
+                    <div>Sufficiente</div>
+                    <div></div>
+                    <div></div>
+                    <div>Eccellente</div>
                 </div>
-                <p id="q-text-ora"
-                    class="text-slate-700 font-medium leading-relaxed mb-5 text-sm md:text-base">
-                </p>
-                <!-- Scala ORA -->
-                <div id="scale-ora" class="grid grid-cols-7 gap-1.5"></div>
-                <!-- Legenda scala ORA -->
-                <div class="scale-legend">
-                    <span>Per<br>niente</span>
-                    <span>Poco</span>
-                    <span>App.<br>suff.</span>
-                    <span>Suffi-<br>ciente</span>
-                    <span>Dis-<br>creto</span>
-                    <span>Buono</span>
-                    <span>Eccel-<br>lente</span>
-                </div>
-            </div>
-
-            <!-- Divisore -->
-            <div class="border-t border-slate-100"></div>
-
-            <!-- SEZIONE: IN PASSATO -->
-            <div class="p-5 md:p-6 bg-slate-50 section-past">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400 flex-shrink-0"></span>
-                    <span class="text-xs font-bold uppercase tracking-widest text-slate-500">
-                        In Passato
-                        <span class="normal-case font-normal text-slate-400 ml-1">
-                            (Come condiviso in presentazione attività)
-                        </span>
-                    </span>
-                </div>
-                <p id="q-text-ex"
-                    class="text-slate-600 font-medium leading-relaxed mb-5 text-sm md:text-base">
-                </p>
-                <!-- Scala PASSATO -->
-                <div id="scale-ex" class="grid grid-cols-7 gap-1.5"></div>
-                <!-- Legenda scala PASSATO -->
-                <div class="scale-legend">
-                    <span>Per<br>niente</span>
-                    <span>Poco</span>
-                    <span>App.<br>suff.</span>
-                    <span>Suffi-<br>ciente</span>
-                    <span>Dis-<br>creto</span>
-                    <span>Buono</span>
-                    <span>Eccel-<br>lente</span>
-                </div>
-            </div>
-
-            <!-- Navigazione -->
-            <div class="border-t border-slate-100 px-6 py-4 flex items-center justify-between bg-white">
-                <button id="btn-back" onclick="goBack()"
-                    class="flex items-center gap-1.5 text-slate-500 hover:text-slate-700
-                           font-semibold text-sm py-2 px-4 rounded-lg hover:bg-slate-100 transition">
-                    &larr; Indietro
-                </button>
-
-                <span id="hint-both" class="text-xs text-slate-400 text-center hidden">
-                    Rispondi ad entrambe
-                </span>
-
-                <button id="btn-next" onclick="goNext()" disabled
-                    class="btn-wpa text-white font-bold py-2.5 px-7 rounded-xl text-sm">
-                    <span id="btn-next-text">Avanti &rarr;</span>
-                </button>
             </div>
         </div>
+
+        <!-- CARD PASSATO (Sempre Grigia) -->
+        <div id="card-ex" class="relative card-premium p-6 pt-7 border-slate-200">
+            <!-- Badge superiore grigio centrato a cavallo -->
+            <div class="absolute -top-3.5 left-1/2 transform -translate-x-1/2 px-4 py-0.5 rounded-full text-xs font-bold border border-slate-200 bg-slate-100 text-slate-600">
+                Passato
+            </div>
+
+            <!-- Domanda Centrata Grigio/Slate -->
+            <p id="q-text-ex" class="q-text text-center font-bold text-base md:text-lg leading-relaxed px-2 text-slate-600">
+                Quanto ritiene che le responsabilità e i compiti assegnati fossero adeguati...
+            </p>
+
+            <!-- Scala Cerchi Passato -->
+            <div class="mt-5">
+                <div id="scale-ex" class="flex justify-between items-center gap-1 max-w-md mx-auto"></div>
+                
+                <!-- Legenda orizzontale minimal 1-4-7 -->
+                <div class="grid grid-cols-7 gap-1 mt-2 text-center text-[10px] md:text-[11px] text-slate-500 font-semibold max-w-md mx-auto">
+                    <div>Per niente</div>
+                    <div></div>
+                    <div></div>
+                    <div>Sufficiente</div>
+                    <div></div>
+                    <div></div>
+                    <div>Eccellente</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Barra Navigazione inferiore -->
+    <div class="flex items-center justify-between px-2 pt-3 border-t border-slate-200 mt-2">
+        <button id="btn-back" onclick="goBack()"
+            class="flex items-center gap-1 text-slate-400 hover:text-slate-600 font-bold text-xs py-2.5 px-4 rounded-xl hover:bg-slate-100 transition">
+            &larr; Indietro
+        </button>
+
+        <span id="hint-both" class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider text-center animate-pulse">
+            Rispondi ad entrambe le domande
+        </span>
+
+        <button id="btn-next" onclick="goNext()" disabled
+            class="btn-wpa text-white font-bold py-2.5 px-6 rounded-xl text-xs">
+            <span id="btn-next-text">Avanti &rarr;</span>
+        </button>
     </div>
 </div>
 
@@ -383,11 +403,10 @@
      SCREEN: GRAZIE
 ====================================================== -->
 <div id="screen-thankyou" class="hidden min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl p-8 md:p-12 max-w-lg w-full text-center screen-active">
+    <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12 max-w-lg w-full text-center screen-active border border-slate-100">
 
-        <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-            style="background: #ECFDF5;">
-            <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-emerald-50">
+            <svg class="w-10 h-10 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
             </svg>
         </div>
@@ -400,20 +419,20 @@
             Il tuo contributo è fondamentale per l'analisi del clima aziendale.
         </p>
 
-        <div class="bg-green-50 rounded-xl p-4 text-left space-y-2 mb-8">
-            <p class="text-sm text-green-700 flex items-center gap-2">
+        <div class="bg-emerald-50 bg-opacity-60 rounded-2xl p-4 text-left space-y-2 mb-8 border border-emerald-100">
+            <p class="text-sm text-emerald-800 flex items-center gap-2">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                 </svg>
                 Risposte salvate con successo
             </p>
-            <p class="text-sm text-green-600 flex items-center gap-2">
+            <p class="text-sm text-emerald-700 flex items-center gap-2">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                 </svg>
                 Anonimato garantito – nessun dato personale raccolto
             </p>
-            <p class="text-sm text-green-600 flex items-center gap-2">
+            <p class="text-sm text-emerald-700 flex items-center gap-2">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
                 </svg>
@@ -428,7 +447,7 @@
 
 
 <!-- ======================================================
-     JAVASCRIPT
+     JAVASCRIPT — CONFIGURAZIONE & LOGICA DI GIOCO
 ====================================================== -->
 <script>
 // =========================================================
@@ -441,27 +460,25 @@ const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // =========================================================
-// ▶ MAPPA DIMENSIONI (colori interni, non mostrati all'utente)
+// ▶ CONFIGURAZIONE COLORI E BACKGROUND DELLE DIMENSIONI
 // =========================================================
 const DIM_CFG = {
-    OP1: { col: '#3B5BDB', da: 1,  a: 11 },
-    CO2: { col: '#0891B2', da: 12, a: 22 },
-    CR3: { col: '#7C3AED', da: 23, a: 33 },
-    SA4: { col: '#D97706', da: 34, a: 44 },
-    RI5: { col: '#DC2626', da: 45, a: 55 },
+    OP1: { col: '#3B5BDB', bg: '#EEF2FF', border: '#C7D2FE', da:  1, a: 11 }, // Organizzazione (Indigo/Blue)
+    CO2: { col: '#0891B2', bg: '#ECFEFF', border: '#CFFAFE', da: 12, a: 22 }, // Comunicazione (Cyan)
+    CR3: { col: '#7C3AED', bg: '#F5F3FF', border: '#DDD6FE', da: 23, a: 33 }, // Fiducia (Purple)
+    SA4: { col: '#D97706', bg: '#FFFBEB', border: '#FEF3C7', da: 34, a: 44 }, // Appartenenza (Amber)
+    RI5: { col: '#DC2626', bg: '#FEF2F2', border: '#FEE2E2', da: 45, a: 55 }, // Equità (Red)
 };
 
-function getDim(qId) {
-    for (const [k, v] of Object.entries(DIM_CFG)) {
-        if (qId >= v.da && qId <= v.a) return v.col;
+function getDimCfg(qId) {
+    for (const v of Object.values(DIM_CFG)) {
+        if (qId >= v.da && qId <= v.a) return v;
     }
-    return '#3B5BDB';
+    return DIM_CFG.OP1;
 }
 
 // =========================================================
-// ▶ ORDINE SHUFFLE DOMANDE
-//   Interleaving per dimensione: OP1→CO2→CR3→SA4→RI5 × 11 round
-//   Round 1: q1,q12,q23,q34,q45  Round 2: q2,q13,q24,q35,q46 ...
+// ▶ ORDINE SHUFFLE — interleaving per dimensione
 // =========================================================
 const SHUFFLED_ORDER = [
      1, 12, 23, 34, 45,
@@ -476,10 +493,9 @@ const SHUFFLED_ORDER = [
     10, 21, 32, 43, 54,
     11, 22, 33, 44, 55,
 ];
-// SHUFFLED_ORDER[i] = id della domanda originale mostrata allo step i+1
 
 // =========================================================
-// ▶ LE 55 DOMANDE (indicizzate per id, non per posizione)
+// ▶ DOMANDE DEL QUESTIONARIO (scala 1-7)
 // =========================================================
 const DOMANDE = {
     1:  { ora: "Quanto ritiene che le responsabilità e i compiti assegnati siano adeguati alle sue competenze e capacità?",
@@ -505,7 +521,7 @@ const DOMANDE = {
     11: { ora: "Quanto ritieni ci sia un metodo con cui si investe sulla crescita delle persone in azienda (es. sviluppo/formazione)?",
           ex:  "Quanto ritieni ci fosse un metodo con cui si investiva sulla crescita delle persone in azienda (es. sviluppo/formazione)?" },
     12: { ora: "Quanto ritiene ci sia una adeguata comunicazione tra le diverse aree aziendali?",
-          ex:  "Quanto ritiene ci fosse una adeguata comunicazione tra le diverse aree aziendali?" },
+          ex:  "Quanto ritiene ci fosse una adeguata comunicazione tra las diverse aree aziendali?" },
     13: { ora: "Quanto ritiene di essere informato sul lavoro che fanno le persone delle altre aree in azienda?",
           ex:  "Quanto ritiene che fosse informato sul lavoro che facevano le persone delle altre aree in azienda?" },
     14: { ora: "Quanto ritiene di conoscere gli obiettivi e la Missione dell'azienda?",
@@ -563,7 +579,7 @@ const DOMANDE = {
     40: { ora: "Quanto ritiene che il suo lavoro contribuisca anche alla sua crescita personale?",
           ex:  "Quanto ritiene che il suo lavoro contribuisse anche alla sua crescita personale?" },
     41: { ora: "Quanto ritiene di conoscere il modo in cui il suo lavoro contribuisce agli obiettivi aziendali?",
-          ex:  "Quanto ritiene di conoscere il modo in cui il suo lavoro contribuisse agli obiettivi aziendali?" },
+          ex:  "Quanto ritiene di conoscere il modo in cui il suo lavoro contribusse agli obiettivi aziendali?" },
     42: { ora: "Quanto ritiene di vedere un futuro professionale in questa organizzazione?",
           ex:  "Quanto ritiene vedesse un futuro professionale in questa organizzazione?" },
     43: { ora: "Quanto ritiene che il suo lavoro abbia un significato che vada oltre la sola retribuzione?",
@@ -595,19 +611,19 @@ const DOMANDE = {
 };
 
 // =========================================================
-// ▶ STATO APPLICAZIONE
+// ▶ STATO DELL'APPLICAZIONE
 // =========================================================
 let appState = {
     aziendaId:         null,
     aziendaNome:       '',
     gruppiList:        [],
     gruppoSelezionato: '',
-    stepCorrente:      1,    // 1-55 (posizione display, non id domanda)
-    risposte:          {},   // { q01_ora: 5, q01_ex: 3, ... } — chiavi = id originale
+    stepCorrente:      1,
+    risposte:          {},
 };
 
 // =========================================================
-// ▶ INIZIALIZZAZIONE
+// ▶ INIZIALIZZAZIONE & SUPABASE SYNC
 // =========================================================
 window.addEventListener('DOMContentLoaded', async () => {
     const params   = new URLSearchParams(window.location.search);
@@ -638,12 +654,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         appState.aziendaNome = data.nome;
         appState.gruppiList  = data.gruppi || [];
 
-        // Popola dropdown gruppi
+        // Popola il menu a tendina
         const sel = document.getElementById('gruppo-select');
         appState.gruppiList.forEach(g => {
-            const opt      = document.createElement('option');
+            const opt = document.createElement('option');
             const nomeGruppo = typeof g === 'object' ? g.nome : g;
-            opt.value      = nomeGruppo;
+            opt.value = nomeGruppo;
             opt.textContent = nomeGruppo;
             sel.appendChild(opt);
         });
@@ -652,7 +668,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         showScreen('intro');
 
     } catch (err) {
-        console.error('Errore caricamento:', err);
+        console.error('Errore di caricamento:', err);
         showError('Errore di connessione al server. Riprova più tardi.');
     }
 });
@@ -663,8 +679,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 function showScreen(name) {
     ['loading','error','intro','group','question','thankyou'].forEach(s => {
         const el = document.getElementById(`screen-${s}`);
-        if (!el) return;
-        el.classList.toggle('hidden', s !== name);
+        if (el) el.classList.toggle('hidden', s !== name);
     });
 }
 function showError(msg) {
@@ -672,9 +687,7 @@ function showError(msg) {
     showScreen('error');
 }
 
-// =========================================================
-// ▶ SELEZIONE GRUPPO
-// =========================================================
+// Abilitazione bottone all'inserimento del gruppo
 document.getElementById('gruppo-select').addEventListener('change', function () {
     document.getElementById('btn-start-quiz').disabled = !this.value;
 });
@@ -690,35 +703,47 @@ function startQuiz() {
 }
 
 // =========================================================
-// ▶ RENDERING STEP
+// ▶ LOGICA RENDERING DEL SINGOLO STEP
 // =========================================================
 function pad(n) { return String(n).padStart(2,'0'); }
 
 function renderStep(stepNum) {
-    // Recupera la domanda originale in base all'ordine shuffle
     const qId  = SHUFFLED_ORDER[stepNum - 1];
     const q    = DOMANDE[qId];
-    const col  = getDim(qId);
+    const dim  = getDimCfg(qId);
+    const col  = dim.col;
 
-    // Aggiorna UI
+    // 1. Aggiorna indicatore progresso superiore
     document.getElementById('step-counter').textContent = `Domanda ${stepNum} di 55`;
     document.getElementById('progress-pct').textContent = Math.round(stepNum / 55 * 100) + '%';
-    document.getElementById('progress-bar').style.width      = (stepNum / 55 * 100).toFixed(1) + '%';
-    document.getElementById('progress-bar').style.background = col;
+    
+    const pBar = document.getElementById('progress-bar');
+    pBar.style.width      = (stepNum / 55 * 100).toFixed(1) + '%';
+    pBar.style.background = col;
 
-    document.getElementById('card-header').style.background = col;
-    document.getElementById('q-number').textContent         = pad(stepNum);
-    document.getElementById('q-text-ora').textContent       = q.ora;
-    document.getElementById('q-text-ex').textContent        = q.ex;
-    document.getElementById('ora-dot').style.background     = col;
-    document.getElementById('section-ora-wrapper').style.borderTopColor = col;
+    // 2. Aggiorna testi domande
+    document.getElementById('q-text-ora').textContent = q.ora;
+    document.getElementById('q-text-ex').textContent  = q.ex;
 
-    // Nascondi tasto Indietro al primo step
-    document.getElementById('btn-back').classList.toggle('invisible', stepNum === 1);
+    // 3. Stila la card PRESENTE in base al colore della dimensione
+    const cardOra   = document.getElementById('card-ora');
+    const badgeOra  = document.getElementById('badge-ora');
+    const textOra   = document.getElementById('q-text-ora');
 
-    // Render scale usando l'id originale come chiave
+    cardOra.style.borderColor     = dim.border;
+    cardOra.style.backgroundColor = '#ffffff'; // Sfondo bianco pulito
+    
+    badgeOra.style.backgroundColor = dim.bg;
+    badgeOra.style.borderColor     = dim.border;
+    badgeOra.style.color           = col;
+    
+    textOra.style.color            = col;
+
+
+
+    // 5. Renderizza le scale circolari
     renderScale('scale-ora', 'ora', qId, col);
-    renderScale('scale-ex',  'ex',  qId, '#64748b');
+    renderScale('scale-ex',  'ex',  qId, '#64748b'); // Passato sempre grigio
 
     updateNextBtn(stepNum, qId);
 
@@ -737,12 +762,13 @@ function renderScale(containerId, tipo, qId, colore) {
         btn.textContent  = v;
         const isSelected = currentVal === v;
 
-        btn.className = `scale-btn w-full aspect-square rounded-lg text-sm font-bold border-2
-            ${isSelected
-                ? 'selected text-white border-transparent'
-                : 'bg-white border-slate-200 text-slate-600'}`;
-
-        if (isSelected) btn.style.background = colore;
+        btn.className = `scale-circle-btn ${isSelected ? 'selected text-white' : ''}`;
+        
+        if (isSelected) {
+            btn.style.backgroundColor = colore;
+        } else {
+            btn.style.backgroundColor = '#ffffff';
+        }
 
         btn.addEventListener('click', () => selectAnswer(tipo, qId, v, colore));
         container.appendChild(btn);
@@ -762,18 +788,20 @@ function updateNextBtn(stepNum, qId) {
     const isLast  = stepNum === 55;
 
     document.getElementById('btn-next').disabled = !ok;
-    document.getElementById('hint-both').classList.toggle('hidden', ok);
+    document.getElementById('hint-both').classList.toggle('invisible', ok);
     document.getElementById('btn-next-text').innerHTML =
         isLast ? 'Invia Risposte &#10003;' : 'Avanti &rarr;';
 }
 
 // =========================================================
-// ▶ NAVIGAZIONE
+// ▶ NAVIGAZIONE AVANTI / INDIETRO
 // =========================================================
 function goBack() {
     if (appState.stepCorrente > 1) {
         appState.stepCorrente--;
         renderStep(appState.stepCorrente);
+    } else {
+        showScreen('group');
     }
 }
 
@@ -793,15 +821,14 @@ async function goNext() {
 }
 
 // =========================================================
-// ▶ INVIO DATI A SUPABASE
+// ▶ SALVATAGGIO IN SUPABASE
 // =========================================================
 async function submitRisposte() {
     const btn = document.getElementById('btn-next');
     btn.disabled = true;
-    document.getElementById('btn-next-text').textContent = 'Invio in corso...';
+    document.getElementById('btn-next-text').textContent = 'Invio...';
 
     try {
-        // Costruisci payload con le chiavi originali (q01_ora...q55_ex)
         const payload = {
             azienda_id: appState.aziendaId,
             gruppo:     appState.gruppoSelezionato,
@@ -819,8 +846,8 @@ async function submitRisposte() {
         showScreen('thankyou');
 
     } catch (err) {
-        console.error('Errore invio:', err);
-        alert("Errore durante l'invio. Controlla la connessione e riprova.");
+        console.error('Errore durante il salvataggio:', err);
+        alert("Errore durante l'invio delle risposte. Controlla la connessione internet e riprova.");
         btn.disabled = false;
         document.getElementById('btn-next-text').innerHTML = 'Invia Risposte &#10003;';
     }
